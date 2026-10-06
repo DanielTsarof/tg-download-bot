@@ -16,6 +16,7 @@ type FileCache struct {
 	Title     string
 	SourceID  string
 	CreatedAt time.Time
+	Quality   string
 }
 
 type Request struct {
@@ -36,6 +37,7 @@ type Request struct {
 	InlineMessageID *string
 	CreatedAt       time.Time
 	CompletedAt     *time.Time
+	Quality         string
 }
 
 type User struct {

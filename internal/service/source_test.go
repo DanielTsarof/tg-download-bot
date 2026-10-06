@@ -3,6 +3,8 @@ package service
 import (
 	"strings"
 	"testing"
+
+	"tg-file-downloader/internal/ytdl"
 )
 
 func TestParseSource(t *testing.T) {
@@ -11,10 +13,10 @@ func TestParseSource(t *testing.T) {
 		want  Source
 		valid bool
 	}{
-		{"https://www.youtube.com/watch?v=jNQXAC9IVRw", Source{"https://www.youtube.com/watch?v=jNQXAC9IVRw", true}, true},
-		{"  me   at the\nzoo ", Source{"me at the zoo", false}, true},
-		{"ftp://example.com/a", Source{"ftp://example.com/a", false}, true}, // not a supported link: searched as a name
-		{"youtube.com/watch?v=1", Source{"youtube.com/watch?v=1", false}, true},
+		{"https://www.youtube.com/watch?v=jNQXAC9IVRw", Source{Query: "https://www.youtube.com/watch?v=jNQXAC9IVRw", IsURL: true}, true},
+		{"  me   at the\nzoo ", Source{Query: "me at the zoo", IsURL: false}, true},
+		{"ftp://example.com/a", Source{Query: "ftp://example.com/a", IsURL: false}, true}, // not a supported link: searched as a name
+		{"youtube.com/watch?v=1", Source{Query: "youtube.com/watch?v=1", IsURL: false}, true},
 		{"", Source{}, false},
 		{"   ", Source{}, false},
 		{strings.Repeat("a", 301), Source{}, false},
@@ -48,5 +50,26 @@ func TestSafeFilename(t *testing.T) {
 	}
 	if got := safeFilename("  "); got != "file" {
 		t.Errorf("safeFilename(blank) = %q", got)
+	}
+}
+
+func TestWithFormat(t *testing.T) {
+	src := Source{Query: "x"}
+	if got := src.withFormat(ytdl.FormatMP4).Quality; got != ytdl.Quality480 {
+		t.Errorf("default video quality = %q", got)
+	}
+	if got := (Source{Query: "x", Quality: ytdl.Quality720}).withFormat(ytdl.FormatMP4).Quality; got != ytdl.Quality720 {
+		t.Errorf("explicit quality = %q", got)
+	}
+	if got := (Source{Query: "x", Quality: ytdl.Quality720}).withFormat(ytdl.FormatMP3).Quality; got != "" {
+		t.Errorf("audio quality = %q", got)
+	}
+}
+
+func TestFormatLabel(t *testing.T) {
+	for _, tt := range [][3]string{{"mp4", "720", "MP4 720p"}, {"mp4", "best", "MP4 best"}, {"mp3", "", "MP3"}} {
+		if got := FormatLabel(tt[0], tt[1]); got != tt[2] {
+			t.Errorf("FormatLabel(%q, %q) = %q", tt[0], tt[1], got)
+		}
 	}
 }

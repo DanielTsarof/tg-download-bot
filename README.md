@@ -21,9 +21,10 @@ that are still running when the bot stops resume on the next start.
 
 | Command | |
 |---|---|
-| `/mp3 <link or name>`, `/mp4 …`, `/wav …` | Download in that format |
+| `/mp3 <link or name>`, `/wav …` | Download audio in that format |
+| `/mp4 [360\|480\|720\|1080\|best] <link or name>` | Download video; the resolution is optional and defaults to 480p (e.g. `/mp4 720 https://…`) |
 | any link or name as a message | Pick the format with buttons |
-| `@your_bot <link>` in any chat | Inline: pick a format, and the posted message turns into the file |
+| `@your_bot <link>` in any chat | Inline: pick a format, and the posted message turns into the file (video in 480p) |
 | `/history [page]`, `/me` | Your requests, role and today's usage |
 
 Admin commands. `<user>` is a Telegram ID or `@username`:

@@ -8,6 +8,7 @@ import (
 	"unicode/utf8"
 
 	"tg-file-downloader/internal/db/sqlc"
+	"tg-file-downloader/internal/service"
 )
 
 func displayName(u sqlc.User) string {
@@ -52,7 +53,7 @@ var statusIcons = map[string]string{
 // requestLine renders one history entry; withUser adds the requester's ID.
 func requestLine(r sqlc.Request, withUser bool) string {
 	var sb strings.Builder
-	fmt.Fprintf(&sb, "%s #%d %s %s", statusIcons[r.Status], r.ID, r.CreatedAt.UTC().Format("01-02 15:04"), strings.ToUpper(r.Format))
+	fmt.Fprintf(&sb, "%s #%d %s %s", statusIcons[r.Status], r.ID, r.CreatedAt.UTC().Format("01-02 15:04"), service.FormatLabel(r.Format, r.Quality))
 	if withUser {
 		fmt.Fprintf(&sb, " user %d", r.UserID)
 	}

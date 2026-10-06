@@ -56,7 +56,7 @@ func statusText(req sqlc.Request, p phase) string {
 	case phaseUploading:
 		prefix = "📤 Sending"
 	}
-	return fmt.Sprintf("%s [%s]: %s", prefix, strings.ToUpper(req.Format), req.Query)
+	return fmt.Sprintf("%s [%s]: %s", prefix, FormatLabel(req.Format, req.Quality), req.Query)
 }
 
 func replyTo(messageID int) *models.ReplyParameters {
@@ -94,7 +94,7 @@ func (s *Service) deleteStatusMessage(ctx context.Context, req sqlc.Request) {
 }
 
 func (s *Service) notifyFailure(ctx context.Context, req sqlc.Request, userMsg string, log *slog.Logger) {
-	text := fmt.Sprintf("❌ [%s] %s\n%s", strings.ToUpper(req.Format), req.Query, userMsg)
+	text := fmt.Sprintf("❌ [%s] %s\n%s", FormatLabel(req.Format, req.Quality), req.Query, userMsg)
 	var err error
 	switch {
 	case req.InlineMessageID != nil:

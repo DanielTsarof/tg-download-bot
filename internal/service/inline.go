@@ -13,7 +13,10 @@ import (
 
 // CachedFile returns the stored Telegram file for src in format f, if any.
 func (s *Service) CachedFile(ctx context.Context, src Source, f ytdl.Format) (*sqlc.FileCache, error) {
-	c, err := s.q.GetCachedFile(ctx, sqlc.GetCachedFileParams{LookupKey: src.cacheKey(), Format: string(f)})
+	src = src.withFormat(f)
+	c, err := s.q.GetCachedFile(ctx, sqlc.GetCachedFileParams{
+		LookupKey: src.cacheKey(), Format: string(f), Quality: string(src.Quality),
+	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -49,8 +52,10 @@ func (s *Service) RecordCachedInline(ctx context.Context, userID int64, src Sour
 	if err != nil {
 		return err
 	}
+	src = src.withFormat(f)
 	req, err := s.q.CreateRequest(ctx, sqlc.CreateRequestParams{
 		UserID: userID, Kind: KindInline, Query: src.Query, IsUrl: src.IsURL, Format: string(f),
+		Quality: string(src.Quality),
 	})
 	if err != nil {
 		return err

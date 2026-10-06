@@ -1,6 +1,10 @@
 package bot
 
-import "testing"
+import (
+	"testing"
+
+	"tg-file-downloader/internal/ytdl"
+)
 
 func TestParseCommand(t *testing.T) {
 	tests := []struct {
@@ -39,6 +43,28 @@ func TestParseLimit(t *testing.T) {
 	for in, want := range map[string]bool{"0": true, "25": true, "-1": false, "x": false, "99999999999": false} {
 		if _, ok := parseLimit(in); ok != want {
 			t.Errorf("parseLimit(%q) ok = %v", in, ok)
+		}
+	}
+}
+
+func TestSplitQuality(t *testing.T) {
+	tests := []struct {
+		in      string
+		quality ytdl.Quality
+		rest    string
+	}{
+		{"720 https://youtu.be/x", ytdl.Quality720, "https://youtu.be/x"},
+		{"best me at the zoo", ytdl.QualityBest, "me at the zoo"},
+		{"1080p hits", ytdl.Quality1080, "hits"},
+		{"https://youtu.be/x", "", "https://youtu.be/x"},
+		{"me at the zoo", "", "me at the zoo"},
+		{"720", "", "720"}, // a bare number is a search
+		{"4k movie", "", "4k movie"},
+	}
+	for _, tt := range tests {
+		q, rest := splitQuality(tt.in)
+		if q != tt.quality || rest != tt.rest {
+			t.Errorf("splitQuality(%q) = %q, %q", tt.in, q, rest)
 		}
 	}
 }

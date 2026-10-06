@@ -49,9 +49,9 @@ func (q *Queries) CountUserRequestsSince(ctx context.Context, arg CountUserReque
 }
 
 const createRequest = `-- name: CreateRequest :one
-INSERT INTO requests (user_id, kind, query, is_url, format, chat_id, inline_message_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, user_id, kind, query, is_url, format, task_id, status, error, title, source_id, from_cache, chat_id, status_message_id, inline_message_id, created_at, completed_at
+INSERT INTO requests (user_id, kind, query, is_url, format, quality, chat_id, inline_message_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING id, user_id, kind, query, is_url, format, task_id, status, error, title, source_id, from_cache, chat_id, status_message_id, inline_message_id, created_at, completed_at, quality
 `
 
 type CreateRequestParams struct {
@@ -60,6 +60,7 @@ type CreateRequestParams struct {
 	Query           string
 	IsUrl           bool
 	Format          string
+	Quality         string
 	ChatID          *int64
 	InlineMessageID *string
 }
@@ -71,6 +72,7 @@ func (q *Queries) CreateRequest(ctx context.Context, arg CreateRequestParams) (R
 		arg.Query,
 		arg.IsUrl,
 		arg.Format,
+		arg.Quality,
 		arg.ChatID,
 		arg.InlineMessageID,
 	)
@@ -93,21 +95,23 @@ func (q *Queries) CreateRequest(ctx context.Context, arg CreateRequestParams) (R
 		&i.InlineMessageID,
 		&i.CreatedAt,
 		&i.CompletedAt,
+		&i.Quality,
 	)
 	return i, err
 }
 
 const deleteCachedFile = `-- name: DeleteCachedFile :exec
-DELETE FROM file_cache WHERE lookup_key = $1 AND format = $2
+DELETE FROM file_cache WHERE lookup_key = $1 AND format = $2 AND quality = $3
 `
 
 type DeleteCachedFileParams struct {
 	LookupKey string
 	Format    string
+	Quality   string
 }
 
 func (q *Queries) DeleteCachedFile(ctx context.Context, arg DeleteCachedFileParams) error {
-	_, err := q.db.Exec(ctx, deleteCachedFile, arg.LookupKey, arg.Format)
+	_, err := q.db.Exec(ctx, deleteCachedFile, arg.LookupKey, arg.Format, arg.Quality)
 	return err
 }
 
@@ -128,16 +132,17 @@ func (q *Queries) FailRequest(ctx context.Context, arg FailRequestParams) error 
 }
 
 const getCachedFile = `-- name: GetCachedFile :one
-SELECT lookup_key, format, tg_file_id, media_kind, title, source_id, created_at FROM file_cache WHERE lookup_key = $1 AND format = $2
+SELECT lookup_key, format, tg_file_id, media_kind, title, source_id, created_at, quality FROM file_cache WHERE lookup_key = $1 AND format = $2 AND quality = $3
 `
 
 type GetCachedFileParams struct {
 	LookupKey string
 	Format    string
+	Quality   string
 }
 
 func (q *Queries) GetCachedFile(ctx context.Context, arg GetCachedFileParams) (FileCache, error) {
-	row := q.db.QueryRow(ctx, getCachedFile, arg.LookupKey, arg.Format)
+	row := q.db.QueryRow(ctx, getCachedFile, arg.LookupKey, arg.Format, arg.Quality)
 	var i FileCache
 	err := row.Scan(
 		&i.LookupKey,
@@ -147,12 +152,13 @@ func (q *Queries) GetCachedFile(ctx context.Context, arg GetCachedFileParams) (F
 		&i.Title,
 		&i.SourceID,
 		&i.CreatedAt,
+		&i.Quality,
 	)
 	return i, err
 }
 
 const getRequest = `-- name: GetRequest :one
-SELECT id, user_id, kind, query, is_url, format, task_id, status, error, title, source_id, from_cache, chat_id, status_message_id, inline_message_id, created_at, completed_at FROM requests WHERE id = $1
+SELECT id, user_id, kind, query, is_url, format, task_id, status, error, title, source_id, from_cache, chat_id, status_message_id, inline_message_id, created_at, completed_at, quality FROM requests WHERE id = $1
 `
 
 func (q *Queries) GetRequest(ctx context.Context, id int64) (Request, error) {
@@ -176,12 +182,13 @@ func (q *Queries) GetRequest(ctx context.Context, id int64) (Request, error) {
 		&i.InlineMessageID,
 		&i.CreatedAt,
 		&i.CompletedAt,
+		&i.Quality,
 	)
 	return i, err
 }
 
 const listRecentRequests = `-- name: ListRecentRequests :many
-SELECT id, user_id, kind, query, is_url, format, task_id, status, error, title, source_id, from_cache, chat_id, status_message_id, inline_message_id, created_at, completed_at FROM requests ORDER BY created_at DESC LIMIT $1 OFFSET $2
+SELECT id, user_id, kind, query, is_url, format, task_id, status, error, title, source_id, from_cache, chat_id, status_message_id, inline_message_id, created_at, completed_at, quality FROM requests ORDER BY created_at DESC LIMIT $1 OFFSET $2
 `
 
 type ListRecentRequestsParams struct {
@@ -216,6 +223,7 @@ func (q *Queries) ListRecentRequests(ctx context.Context, arg ListRecentRequests
 			&i.InlineMessageID,
 			&i.CreatedAt,
 			&i.CompletedAt,
+			&i.Quality,
 		); err != nil {
 			return nil, err
 		}
@@ -228,7 +236,7 @@ func (q *Queries) ListRecentRequests(ctx context.Context, arg ListRecentRequests
 }
 
 const listUnfinishedRequests = `-- name: ListUnfinishedRequests :many
-SELECT id, user_id, kind, query, is_url, format, task_id, status, error, title, source_id, from_cache, chat_id, status_message_id, inline_message_id, created_at, completed_at FROM requests WHERE status IN ('queued', 'running') ORDER BY id
+SELECT id, user_id, kind, query, is_url, format, task_id, status, error, title, source_id, from_cache, chat_id, status_message_id, inline_message_id, created_at, completed_at, quality FROM requests WHERE status IN ('queued', 'running') ORDER BY id
 `
 
 func (q *Queries) ListUnfinishedRequests(ctx context.Context) ([]Request, error) {
@@ -258,6 +266,7 @@ func (q *Queries) ListUnfinishedRequests(ctx context.Context) ([]Request, error)
 			&i.InlineMessageID,
 			&i.CreatedAt,
 			&i.CompletedAt,
+			&i.Quality,
 		); err != nil {
 			return nil, err
 		}
@@ -270,7 +279,7 @@ func (q *Queries) ListUnfinishedRequests(ctx context.Context) ([]Request, error)
 }
 
 const listUserRequests = `-- name: ListUserRequests :many
-SELECT id, user_id, kind, query, is_url, format, task_id, status, error, title, source_id, from_cache, chat_id, status_message_id, inline_message_id, created_at, completed_at FROM requests WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3
+SELECT id, user_id, kind, query, is_url, format, task_id, status, error, title, source_id, from_cache, chat_id, status_message_id, inline_message_id, created_at, completed_at, quality FROM requests WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3
 `
 
 type ListUserRequestsParams struct {
@@ -306,6 +315,7 @@ func (q *Queries) ListUserRequests(ctx context.Context, arg ListUserRequestsPara
 			&i.InlineMessageID,
 			&i.CreatedAt,
 			&i.CompletedAt,
+			&i.Quality,
 		); err != nil {
 			return nil, err
 		}
@@ -318,9 +328,9 @@ func (q *Queries) ListUserRequests(ctx context.Context, arg ListUserRequestsPara
 }
 
 const putCachedFile = `-- name: PutCachedFile :exec
-INSERT INTO file_cache (lookup_key, format, tg_file_id, media_kind, title, source_id)
-VALUES ($1, $2, $3, $4, $5, $6)
-ON CONFLICT (lookup_key, format) DO UPDATE
+INSERT INTO file_cache (lookup_key, format, quality, tg_file_id, media_kind, title, source_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+ON CONFLICT (lookup_key, format, quality) DO UPDATE
 SET tg_file_id = EXCLUDED.tg_file_id,
     media_kind = EXCLUDED.media_kind,
     title = EXCLUDED.title,
@@ -331,6 +341,7 @@ SET tg_file_id = EXCLUDED.tg_file_id,
 type PutCachedFileParams struct {
 	LookupKey string
 	Format    string
+	Quality   string
 	TgFileID  string
 	MediaKind string
 	Title     string
@@ -341,6 +352,7 @@ func (q *Queries) PutCachedFile(ctx context.Context, arg PutCachedFileParams) er
 	_, err := q.db.Exec(ctx, putCachedFile,
 		arg.LookupKey,
 		arg.Format,
+		arg.Quality,
 		arg.TgFileID,
 		arg.MediaKind,
 		arg.Title,

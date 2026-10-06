@@ -24,7 +24,7 @@ var inlineFormats = []struct {
 	title  string
 }{
 	{ytdl.FormatMP3, "🎵 MP3 audio"},
-	{ytdl.FormatMP4, "🎬 MP4 video"},
+	{ytdl.FormatMP4, "🎬 MP4 video (480p)"},
 	{ytdl.FormatWAV, "🎼 WAV audio"},
 }
 
@@ -81,7 +81,7 @@ func (h *Handler) inlineResults(ctx context.Context, iq *models.InlineQuery, u s
 			Title:       f.title,
 			Description: link,
 			InputMessageContent: &models.InputTextMessageContent{
-				MessageText:        fmt.Sprintf("⏳ Queued [%s]: %s", strings.ToUpper(string(f.format)), link),
+				MessageText:        fmt.Sprintf("⏳ Queued [%s]: %s", service.FormatLabel(string(f.format), defaultQuality(f.format)), link),
 				LinkPreviewOptions: &models.LinkPreviewOptions{IsDisabled: tgbot.True()},
 			},
 			// The keyboard makes Telegram report an inline_message_id we can edit later.
@@ -103,6 +103,13 @@ func cachedResult(f ytdl.Format, title string, c *sqlc.FileCache) models.InlineQ
 		return &models.InlineQueryResultCachedVideo{ID: id, VideoFileID: c.TgFileID, Title: title, Description: c.Title, Caption: caption}
 	}
 	return &models.InlineQueryResultCachedDocument{ID: id, DocumentFileID: c.TgFileID, Title: title, Description: c.Title, Caption: caption}
+}
+
+func defaultQuality(f ytdl.Format) string {
+	if f == ytdl.FormatMP4 {
+		return string(ytdl.DefaultQuality)
+	}
+	return ""
 }
 
 // hint is a result that explains why there's nothing to download.

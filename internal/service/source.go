@@ -7,10 +7,36 @@ import (
 	"tg-file-downloader/internal/ytdl"
 )
 
-// Source is what the user asked for: a link or a search name.
+// Source is what the user asked for: a link or a search name, and for
+// video the resolution.
 type Source struct {
-	Query string
-	IsURL bool
+	Query   string
+	IsURL   bool
+	Quality ytdl.Quality // MP4 only; empty means the default
+}
+
+// withFormat normalizes Quality for f: videos get the default resolution,
+// audio has none.
+func (s Source) withFormat(f ytdl.Format) Source {
+	switch {
+	case f != ytdl.FormatMP4:
+		s.Quality = ""
+	case s.Quality == "":
+		s.Quality = ytdl.DefaultQuality
+	}
+	return s
+}
+
+// FormatLabel renders a format with its resolution, e.g. "MP4 720p".
+func FormatLabel(format, quality string) string {
+	label := strings.ToUpper(format)
+	switch quality {
+	case "":
+		return label
+	case string(ytdl.QualityBest):
+		return label + " best"
+	}
+	return label + " " + quality + "p"
 }
 
 // ParseSource classifies user input as a link (absolute http/https URL) or a search name.
@@ -58,7 +84,7 @@ func (s Source) cacheKey() string {
 
 func (s Source) taskRequest(f ytdl.Format) ytdl.CreateTaskRequest {
 	if s.IsURL {
-		return ytdl.CreateTaskRequest{Format: f, URL: s.Query}
+		return ytdl.CreateTaskRequest{Format: f, URL: s.Query, Quality: s.Quality}
 	}
-	return ytdl.CreateTaskRequest{Format: f, Name: s.Query}
+	return ytdl.CreateTaskRequest{Format: f, Name: s.Query, Quality: s.Quality}
 }

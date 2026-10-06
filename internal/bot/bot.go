@@ -233,7 +233,7 @@ func (h *Handler) setAdminCommands(ctx context.Context, b *tgbot.Bot, userID int
 
 var userCommands = []models.BotCommand{
 	{Command: "mp3", Description: "Audio (MP3) by link or name"},
-	{Command: "mp4", Description: "Video (MP4) by link or name"},
+	{Command: "mp4", Description: "Video: /mp4 [360|480|720|1080|best] <link or name>"},
 	{Command: "wav", Description: "Audio (WAV) by link or name"},
 	{Command: "history", Description: "Your recent requests"},
 	{Command: "me", Description: "Your account and limit"},

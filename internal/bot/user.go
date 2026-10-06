@@ -31,7 +31,7 @@ func (h *Handler) cmdHelp(ctx context.Context, b *tgbot.Bot, msg *models.Message
 	var sb strings.Builder
 	sb.WriteString("🎬 Send a link or a name and I'll return the file.\n\n")
 	sb.WriteString("/mp3 <link or name> — audio (MP3)\n")
-	sb.WriteString("/mp4 <link or name> — video (MP4)\n")
+	sb.WriteString("/mp4 [360|480|720|1080|best] <link or name> — video (MP4), 480p by default\n")
 	sb.WriteString("/wav <link or name> — audio (WAV)\n")
 	sb.WriteString("Or just send a link or a name and pick the format.\n\n")
 	if h.svc.InlineEnabled() {
@@ -60,13 +60,40 @@ func (h *Handler) cmdMe(ctx context.Context, b *tgbot.Bot, msg *models.Message, 
 
 func (h *Handler) cmdDownload(f ytdl.Format) func(context.Context, *tgbot.Bot, *models.Message, sqlc.User, string) {
 	return func(ctx context.Context, b *tgbot.Bot, msg *models.Message, u sqlc.User, args string) {
+		var quality ytdl.Quality
+		if f == ytdl.FormatMP4 {
+			quality, args = splitQuality(args)
+		}
 		src, ok := service.ParseSource(args)
 		if !ok {
-			h.reply(ctx, b, msg, fmt.Sprintf("Usage: /%s <link or name>\nExample: /%s https://www.youtube.com/watch?v=jNQXAC9IVRw", f, f))
+			usage := fmt.Sprintf("Usage: /%s <link or name>\nExample: /%s https://www.youtube.com/watch?v=jNQXAC9IVRw", f, f)
+			if f == ytdl.FormatMP4 {
+				usage = mp4Usage
+			}
+			h.reply(ctx, b, msg, usage)
 			return
 		}
+		src.Quality = quality
 		h.startDownload(ctx, b, msg.Chat.ID, msg.ID, u, src, f)
 	}
+}
+
+const mp4Usage = "Usage: /mp4 [360|480|720|1080|best] <link or name>\n" +
+	"The resolution is optional (480p by default).\n" +
+	"Example: /mp4 720 https://www.youtube.com/watch?v=jNQXAC9IVRw"
+
+// splitQuality takes a leading resolution off /mp4 arguments. A resolution
+// alone is kept as the search text, so a name like "1080" still works.
+func splitQuality(args string) (ytdl.Quality, string) {
+	first, rest, found := strings.Cut(strings.TrimSpace(args), " ")
+	if !found || strings.TrimSpace(rest) == "" {
+		return "", args
+	}
+	q, ok := ytdl.ParseQuality(first)
+	if !ok {
+		return "", args
+	}
+	return q, strings.TrimSpace(rest)
 }
 
 func (h *Handler) startDownload(ctx context.Context, b *tgbot.Bot, chatID int64, replyTo int, u sqlc.User, src service.Source, f ytdl.Format) {

@@ -59,9 +59,10 @@ func testPool(t *testing.T) *pgxpool.Pool {
 
 // fakeYtdl serves tasks that are queued, then running, then finished.
 type fakeYtdl struct {
-	mu      sync.Mutex
-	tasks   map[string]*fakeTask
-	created int
+	mu       sync.Mutex
+	tasks    map[string]*fakeTask
+	created  int
+	requests []map[string]any // bodies of POST /v1/tasks
 }
 
 type fakeTask struct {
@@ -75,8 +76,12 @@ func (f *fakeYtdl) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer f.mu.Unlock()
 	switch {
 	case r.Method == http.MethodPost && r.URL.Path == "/v1/tasks":
+		var raw map[string]any
+		body, _ := io.ReadAll(r.Body)
+		_ = json.Unmarshal(body, &raw)
+		f.requests = append(f.requests, raw)
 		var req ytdl.CreateTaskRequest
-		_ = json.NewDecoder(r.Body).Decode(&req)
+		_ = json.Unmarshal(body, &req)
 		f.created++
 		id := fmt.Sprintf("task-%d", f.created)
 		t := &fakeTask{format: string(req.Format)}
@@ -110,6 +115,15 @@ func (f *fakeYtdl) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	default:
 		w.WriteHeader(http.StatusNotFound)
 	}
+}
+
+func (f *fakeYtdl) lastRequest() map[string]any {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if len(f.requests) == 0 {
+		return nil
+	}
+	return f.requests[len(f.requests)-1]
 }
 
 func (f *fakeYtdl) createdCount() int {
@@ -157,6 +171,9 @@ func (f *fakeTelegram) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		result = msg
 	case "sendAudio":
 		msg["audio"] = map[string]any{"file_id": "audio-file-id", "file_unique_id": "u", "duration": 1}
+		result = msg
+	case "sendVideo":
+		msg["video"] = map[string]any{"file_id": "video-file-id", "file_unique_id": "v", "width": 1, "height": 1, "duration": 1}
 		result = msg
 	case "sendDocument":
 		msg["document"] = map[string]any{"file_id": "document-file-id", "file_unique_id": "d"}
@@ -233,6 +250,9 @@ func TestPipeline(t *testing.T) {
 		if got.Status != "succeeded" || got.Title != "Me at the zoo" || got.SourceID != "jNQXAC9IVRw" || got.FromCache {
 			t.Errorf("request = %+v", got)
 		}
+		if body := yt.lastRequest(); body["quality"] != nil || got.Quality != "" {
+			t.Errorf("audio request carried a quality: %v / %q", body, got.Quality)
+		}
 		sends := tg.byMethod("sendAudio")
 		if len(sends) != 1 || sends[0].fields["audio"] != "upload:media-bytes" || sends[0].fields["chat_id"] != "42" {
 			t.Errorf("sendAudio calls = %+v", sends)
@@ -274,6 +294,44 @@ func TestPipeline(t *testing.T) {
 		edits := tg.byMethod("editMessageText")
 		if len(edits) == 0 || !strings.Contains(edits[len(edits)-1].fields["text"], "video unavailable") {
 			t.Errorf("failure was not reported: %+v", edits)
+		}
+	})
+
+	t.Run("video quality", func(t *testing.T) {
+		limit := int32(100)
+		if _, err := q.SetUserDailyLimit(ctx, sqlc.SetUserDailyLimitParams{ID: userID, DailyLimit: &limit}); err != nil {
+			t.Fatal(err)
+		}
+		video := Source{Query: "https://www.youtube.com/watch?v=video", IsURL: true}
+		run := func(src Source) sqlc.Request {
+			t.Helper()
+			req, err := svc.Submit(ctx, userID, KindCommand, src, ytdl.FormatMP4, chat)
+			if err != nil {
+				t.Fatal(err)
+			}
+			svc.Wait()
+			got, _ := q.GetRequest(ctx, req.ID)
+			return got
+		}
+
+		got := run(video) // default
+		if got.Quality != "480" || yt.lastRequest()["quality"] != "480" || got.FromCache {
+			t.Errorf("default: request %+v, body %v", got, yt.lastRequest())
+		}
+		before := yt.createdCount()
+		hd := video
+		hd.Quality = ytdl.Quality720
+		got = run(hd) // a cached 480p file must not answer a 720p request
+		if got.Quality != "720" || got.FromCache || yt.createdCount() != before+1 || yt.lastRequest()["quality"] != "720" {
+			t.Errorf("720p: request %+v, body %v", got, yt.lastRequest())
+		}
+		got = run(hd)
+		if !got.FromCache || yt.createdCount() != before+1 {
+			t.Errorf("720p repeat not cached: %+v", got)
+		}
+		// Back to the default limit (3), which is used up by now.
+		if _, err := q.SetUserDailyLimit(ctx, sqlc.SetUserDailyLimitParams{ID: userID}); err != nil {
+			t.Fatal(err)
 		}
 	})
 

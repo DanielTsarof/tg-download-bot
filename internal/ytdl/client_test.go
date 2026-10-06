@@ -145,3 +145,15 @@ func TestParseFormat(t *testing.T) {
 		}
 	}
 }
+
+func TestParseQuality(t *testing.T) {
+	for in, want := range map[string]Quality{
+		"720": Quality720, "720p": Quality720, "1080P": Quality1080, "BEST": QualityBest,
+		"360": Quality360, "480": Quality480, "240": "", "bestp": "", "": "", "4k": "",
+	} {
+		got, ok := ParseQuality(in)
+		if got != want || ok != (want != "") {
+			t.Errorf("ParseQuality(%q) = %q, %v", in, got, ok)
+		}
+	}
+}

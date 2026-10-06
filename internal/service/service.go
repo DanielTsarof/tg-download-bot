@@ -126,7 +126,7 @@ func (s *Service) DailyLimit(u sqlc.User) (limit int32, ok bool) {
 
 // Submit records a request and starts processing it in the background.
 func (s *Service) Submit(ctx context.Context, userID int64, kind string, src Source, f ytdl.Format, t Target) (sqlc.Request, error) {
-	req, err := s.createRequest(ctx, userID, kind, src, f, t)
+	req, err := s.createRequest(ctx, userID, kind, src.withFormat(f), f, t)
 	if err != nil {
 		return req, err
 	}
@@ -182,6 +182,7 @@ func (s *Service) createRequest(ctx context.Context, userID int64, kind string, 
 			Query:           src.Query,
 			IsUrl:           src.IsURL,
 			Format:          string(f),
+			Quality:         string(src.Quality),
 			ChatID:          nonZero(t.ChatID),
 			InlineMessageID: nonEmpty(t.InlineMessageID),
 		})
@@ -217,13 +218,13 @@ func (s *Service) process(ctx context.Context, req sqlc.Request) {
 }
 
 func (s *Service) execute(ctx context.Context, req sqlc.Request, log *slog.Logger) error {
-	src := Source{Query: req.Query, IsURL: req.IsUrl}
 	format := ytdl.Format(req.Format)
+	src := Source{Query: req.Query, IsURL: req.IsUrl, Quality: ytdl.Quality(req.Quality)}.withFormat(format)
 	key := src.cacheKey()
 
 	// Files uploaded before are re-sent by file_id without touching the service.
 	if req.TaskID == nil {
-		cached, err := s.q.GetCachedFile(ctx, sqlc.GetCachedFileParams{LookupKey: key, Format: req.Format})
+		cached, err := s.q.GetCachedFile(ctx, sqlc.GetCachedFileParams{LookupKey: key, Format: req.Format, Quality: string(src.Quality)})
 		switch {
 		case err == nil:
 			err := s.deliverFileID(ctx, req, MediaKind(cached.MediaKind), cached.TgFileID, cached.Title)
@@ -237,7 +238,7 @@ func (s *Service) execute(ctx context.Context, req sqlc.Request, log *slog.Logge
 				return err
 			}
 			log.Warn("cached file_id rejected; downloading again", "err", err)
-			_ = s.q.DeleteCachedFile(ctx, sqlc.DeleteCachedFileParams{LookupKey: key, Format: req.Format})
+			_ = s.q.DeleteCachedFile(ctx, sqlc.DeleteCachedFileParams{LookupKey: key, Format: req.Format, Quality: string(src.Quality)})
 		case !errors.Is(err, pgx.ErrNoRows):
 			return err
 		}
@@ -301,7 +302,7 @@ func (s *Service) execute(ctx context.Context, req sqlc.Request, log *slog.Logge
 
 	sourceID := deref(task.SourceID)
 	if err := s.q.PutCachedFile(ctx, sqlc.PutCachedFileParams{
-		LookupKey: key, Format: req.Format, TgFileID: fileID, MediaKind: string(sentKind),
+		LookupKey: key, Format: req.Format, Quality: string(src.Quality), TgFileID: fileID, MediaKind: string(sentKind),
 		Title: title, SourceID: sourceID,
 	}); err != nil {
 		log.Warn("cache file_id", "err", err)

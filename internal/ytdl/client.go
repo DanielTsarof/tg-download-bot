@@ -32,6 +32,32 @@ func ParseFormat(s string) (Format, bool) {
 	return "", false
 }
 
+// Quality is the video resolution of an MP4 download.
+type Quality string
+
+const (
+	Quality360  Quality = "360"
+	Quality480  Quality = "480"
+	Quality720  Quality = "720"
+	Quality1080 Quality = "1080"
+	QualityBest Quality = "best"
+
+	DefaultQuality = Quality480
+)
+
+// ParseQuality accepts "720", "720p" or "best" (case-insensitive).
+func ParseQuality(s string) (Quality, bool) {
+	s = strings.ToLower(strings.TrimSpace(s))
+	if Quality(s) == QualityBest {
+		return QualityBest, true
+	}
+	switch q := Quality(strings.TrimSuffix(s, "p")); q {
+	case Quality360, Quality480, Quality720, Quality1080:
+		return q, true
+	}
+	return "", false
+}
+
 type TaskStatus string
 
 const (
@@ -42,9 +68,10 @@ const (
 )
 
 type CreateTaskRequest struct {
-	Format Format `json:"format"`
-	URL    string `json:"url,omitempty"`
-	Name   string `json:"name,omitempty"`
+	Format  Format  `json:"format"`
+	URL     string  `json:"url,omitempty"`
+	Name    string  `json:"name,omitempty"`
+	Quality Quality `json:"quality,omitempty"` // video only
 }
 
 type Task struct {

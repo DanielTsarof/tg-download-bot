@@ -2,8 +2,8 @@
 SELECT count(*) FROM requests WHERE user_id = $1 AND created_at >= $2;
 
 -- name: CreateRequest :one
-INSERT INTO requests (user_id, kind, query, is_url, format, chat_id, inline_message_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+INSERT INTO requests (user_id, kind, query, is_url, format, quality, chat_id, inline_message_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING *;
 
 -- name: GetRequest :one
@@ -55,12 +55,12 @@ FROM requests
 WHERE user_id = $1;
 
 -- name: GetCachedFile :one
-SELECT * FROM file_cache WHERE lookup_key = $1 AND format = $2;
+SELECT * FROM file_cache WHERE lookup_key = $1 AND format = $2 AND quality = $3;
 
 -- name: PutCachedFile :exec
-INSERT INTO file_cache (lookup_key, format, tg_file_id, media_kind, title, source_id)
-VALUES ($1, $2, $3, $4, $5, $6)
-ON CONFLICT (lookup_key, format) DO UPDATE
+INSERT INTO file_cache (lookup_key, format, quality, tg_file_id, media_kind, title, source_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+ON CONFLICT (lookup_key, format, quality) DO UPDATE
 SET tg_file_id = EXCLUDED.tg_file_id,
     media_kind = EXCLUDED.media_kind,
     title = EXCLUDED.title,
@@ -68,4 +68,4 @@ SET tg_file_id = EXCLUDED.tg_file_id,
     created_at = now();
 
 -- name: DeleteCachedFile :exec
-DELETE FROM file_cache WHERE lookup_key = $1 AND format = $2;
+DELETE FROM file_cache WHERE lookup_key = $1 AND format = $2 AND quality = $3;
