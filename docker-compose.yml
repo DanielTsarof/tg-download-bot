@@ -1,0 +1,20 @@
+services:
+  bot:
+    build: .
+    image: tg-file-downloader:latest
+    env_file: .env
+    restart: unless-stopped
+    networks:
+      - ytdl
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+# The network of the already running ytdl-service stack (PostgreSQL and the
+# download API). `docker network ls` shows its name if yours differs.
+networks:
+  ytdl:
+    external: true
+    name: ${YTDL_NETWORK:-ytdl-service_default}
