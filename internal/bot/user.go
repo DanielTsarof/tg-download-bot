@@ -10,9 +10,9 @@ import (
 	tgbot "github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 
-	"tg-file-downloader/internal/db/sqlc"
-	"tg-file-downloader/internal/service"
-	"tg-file-downloader/internal/ytdl"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/db/sqlc"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/service"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/ytdl"
 )
 
 const pendingText = "⏳ You don't have access yet. Your request has been sent to the admins; you'll get a message once it's approved."

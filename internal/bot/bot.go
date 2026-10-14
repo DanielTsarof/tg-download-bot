@@ -9,9 +9,9 @@ import (
 	tgbot "github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 
-	"tg-file-downloader/internal/db/sqlc"
-	"tg-file-downloader/internal/service"
-	"tg-file-downloader/internal/ytdl"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/db/sqlc"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/service"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/ytdl"
 )
 
 type Handler struct {

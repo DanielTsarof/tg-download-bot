@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"tg-file-downloader/internal/ytdl"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/ytdl"
 )
 
 func TestParseSource(t *testing.T) {

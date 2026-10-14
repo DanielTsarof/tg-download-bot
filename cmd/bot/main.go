@@ -15,12 +15,12 @@ import (
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 
-	"tg-file-downloader/internal/bot"
-	"tg-file-downloader/internal/config"
-	"tg-file-downloader/internal/db/migrations"
-	"tg-file-downloader/internal/db/sqlc"
-	"tg-file-downloader/internal/service"
-	"tg-file-downloader/internal/ytdl"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/bot"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/config"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/db/migrations"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/db/sqlc"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/service"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/ytdl"
 )
 
 func main() {

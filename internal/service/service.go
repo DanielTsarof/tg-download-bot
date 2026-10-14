@@ -14,8 +14,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"tg-file-downloader/internal/db/sqlc"
-	"tg-file-downloader/internal/ytdl"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/db/sqlc"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/ytdl"
 )
 
 const (

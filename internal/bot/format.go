@@ -7,8 +7,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"tg-file-downloader/internal/db/sqlc"
-	"tg-file-downloader/internal/service"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/db/sqlc"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/service"
 )
 
 func displayName(u sqlc.User) string {

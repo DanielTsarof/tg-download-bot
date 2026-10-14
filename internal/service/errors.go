@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-telegram/bot"
 
-	"tg-file-downloader/internal/ytdl"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/ytdl"
 )
 
 // TaskFailedError is a task that finished with status "failed".

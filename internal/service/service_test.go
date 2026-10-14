@@ -20,9 +20,9 @@ import (
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 
-	"tg-file-downloader/internal/db/migrations"
-	"tg-file-downloader/internal/db/sqlc"
-	"tg-file-downloader/internal/ytdl"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/db/migrations"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/db/sqlc"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/ytdl"
 )
 
 // The pipeline test needs a scratch PostgreSQL database, e.g.

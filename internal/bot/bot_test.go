@@ -3,7 +3,7 @@ package bot
 import (
 	"testing"
 
-	"tg-file-downloader/internal/ytdl"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/ytdl"
 )
 
 func TestParseCommand(t *testing.T) {

@@ -1,4 +1,4 @@
-module tg-file-downloader
+module github.com/DanielTsarof/ytdl-service-ramona
 
 go 1.26.0
 

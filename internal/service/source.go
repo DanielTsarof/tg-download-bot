@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"strings"
 
-	"tg-file-downloader/internal/ytdl"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/ytdl"
 )
 
 // Source is what the user asked for: a link or a search name, and for

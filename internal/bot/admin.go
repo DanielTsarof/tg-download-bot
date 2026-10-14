@@ -12,8 +12,8 @@ import (
 	"github.com/go-telegram/bot/models"
 	"github.com/jackc/pgx/v5"
 
-	"tg-file-downloader/internal/db/sqlc"
-	"tg-file-downloader/internal/service"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/db/sqlc"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/service"
 )
 
 const (

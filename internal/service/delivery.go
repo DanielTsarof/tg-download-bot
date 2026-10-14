@@ -13,8 +13,8 @@ import (
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 
-	"tg-file-downloader/internal/db/sqlc"
-	"tg-file-downloader/internal/ytdl"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/db/sqlc"
+	"github.com/DanielTsarof/ytdl-service-ramona/internal/ytdl"
 )
 
 // MediaKind is how a file is sent to Telegram.
